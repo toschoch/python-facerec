@@ -35,7 +35,7 @@ def test_comparison():
     p = facedb.persons()[3]
 
     # teach again
-    facedb.teach(codes[6,:]+np.random.randn(128)*0.1, "Tobias Schoch 6", 0.8)
+    facedb.teach(codes[6,:]+np.random.randn(128)*0.01, "Tobias Schoch 6", 0.8)
     assert (facedb.find_similar_persons(codes[6,:])[0].name) == "Tobias Schoch 6"
 
     # test comparison

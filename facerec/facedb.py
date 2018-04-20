@@ -104,7 +104,9 @@ def find_similar_persons(encoding):
     """ returns the sql persons with similar faces corresponding to the encoding """
     #TODO: remove loading of all encodings
     encodings = np.vstack((p.code for p in persons()))
-    I = np.where(np.sqrt(np.sum((encodings - encoding[None,:])**2,axis=1)) < 0.7)[0] + 1
+    distances = np.sqrt(np.sum((encodings - encoding[None,:])**2,axis=1))
+    #I = np.argsort(distances)
+    I = np.where(distances < 0.7)[0] + 1
     return session.query(Person).filter(Person.id.in_(I.tolist())).all()
 
 def get_person(name):
@@ -114,6 +116,7 @@ def get_person(name):
 def teach(facecode, name, weight=1.0):
     """ teach the classifier that the facecode is of the specified person """
 
+    facecode = np.asarray(facecode)
     assert_db_open()
 
     try:
@@ -127,6 +130,29 @@ def teach(facecode, name, weight=1.0):
     except NoResultFound:
         p = Person(name=name, code=facecode)
         session.add(p)
+
+    if not nocommit:
+        session.commit()
+
+    return p
+
+def identify_person(facecode):
+
+    facecode = np.asarray(facecode)
+    assert_db_open()
+
+    similar_persons = find_similar_persons(facecode)
+
+    if len(similar_persons) == 0:
+        p = Person(name='unkown', code=facecode)
+        session.add(p)
+
+    elif len(similar_persons) == 1:
+        p = similar_persons[0]
+
+    else:
+        print("found multiple candidates but return the most similar...")
+        p = similar_persons[0]
 
     if not nocommit:
         session.commit()
