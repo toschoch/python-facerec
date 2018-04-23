@@ -9,7 +9,7 @@ import pathlib
 
 from sqlalchemy import Column, ForeignKey, Integer, String, UniqueConstraint, ARRAY, Float
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, make_transient
+from sqlalchemy.orm import sessionmaker, scoped_session, Session as SqlSession
 from sqlalchemy import create_engine
 from sqlalchemy import types, asc
 from sqlalchemy.orm.exc import NoResultFound
@@ -24,8 +24,7 @@ __db_file = 'face.db'
 
 __engine = None
 nocommit = False
-
-session = None
+Session = None
 
 Base = declarative_base()
 
@@ -55,13 +54,13 @@ class Person(Base):
     #code = Column(ARRAY(Float, dimensions=1024))
 
 
-class Image(Base):
-    __tablename__ = 'images'
-    # Here we define columns for the table person
-    # Notice that each column is also a normal Python instance attribute.
-    id = Column(Integer, ForeignKey("persons.id"), primary_key=True)
-    filename = Column(String(250), nullable=False, unique=True)
-    person_id = Column(Integer, ForeignKey("persons.id"))
+# class Image(Base):
+#     __tablename__ = 'images'
+#     # Here we define columns for the table person
+#     # Notice that each column is also a normal Python instance attribute.
+#     id = Column(Integer, ForeignKey("persons.id"), primary_key=True)
+#     filename = Column(String(250), nullable=False, unique=True)
+#     person_id = Column(Integer, ForeignKey("persons.id"))
 
 
 def get_db_path():
@@ -82,33 +81,42 @@ def set_db_path(path):
 def open_db():
 
     global __engine
-    global session
+    global Session
 
     __engine = create_engine('sqlite:///{}'.format(get_db_file()))
     Base.metadata.create_all(__engine)
-    session = Session(bind=__engine)
+    session_factory = sessionmaker(bind=__engine)
+    Session = scoped_session(session_factory)
 
-def assert_db_open():
-    if session is None:
+def assert_session(session=None):
+    if Session is None:
         open_db()
+    if session is None:
+        session = Session()
+    assert isinstance(session, SqlSession)
+    return session
 
-def persons():
-    assert_db_open()
+
+def persons(session=None):
+    session = assert_session(session)
     return session.query(Person).order_by(asc(Person.id)).all()
 
-def images():
-    assert_db_open()
-    return session.query(Image).all()
+# def images():
+#     assert_db_open()
+#     return session.query(Image).all()
 
-def find_similar_persons(encoding):
+def find_similar_persons(encoding, session=None):
     """
     returns the sql persons with similar faces corresponding to the encoding, sorted by similarity.
     Args:
         encoding: (np.array, cv.array) with 128-d face feature vector.
+        session: (sqlalchemy.Session, optional) session to use for db lookup
 
     Returns:
         (list of Persons) with
     """
+    session = assert_session(session)
+
     #TODO: remove loading of all encodings
     encodings = np.vstack((p.code for p in persons()))
     distances = np.sqrt(np.sum((encodings - encoding[None,:])**2,axis=1))
@@ -119,17 +127,21 @@ def find_similar_persons(encoding):
     return similar_persons
 
 
-def get_person(name=None, id=None):
+def get_person(name=None, id=None, session=None):
     """
     returns the first sql person corresponding to the name
     Args:
         name: (str) name of the person in the face database (either name or id has to be specified)
         id: (int) id of the person in the face database (either name or id has to be specified)
+        session: (sqlalchemy.Session, optional)
 
     Returns:
         (facedb.Person)
 
     """
+
+    session = assert_session(session)
+
     if id is not None:
         return session.query(Person).filter(Person.id == id).one()
     elif name is not None:
@@ -137,7 +149,7 @@ def get_person(name=None, id=None):
     else:
         raise ValueError("either name or id must be specified!")
 
-def teach(facecode, name=None, id=None, weight=1.0):
+def teach(facecode, name=None, id=None, weight=1.0, session=None):
     """
     teach the classifier that the facecode is of the specified person
     Args:
@@ -151,7 +163,7 @@ def teach(facecode, name=None, id=None, weight=1.0):
     """
 
     facecode = np.asarray(facecode)
-    assert_db_open()
+    session = assert_session(session)
 
     try:
         p = get_person(name, id)
@@ -172,18 +184,19 @@ def teach(facecode, name=None, id=None, weight=1.0):
 
     return p
 
-def identify_person(facecode):
+def identify_person(facecode, session=None):
     """
     search for similar faces in database, return most similar person and assure the entry for every unknown face.
     Args:
         facecode: (np.array, cv.array) with 128-d face feature vector.
+        session: (sqlalchemy.Session, optional)
 
     Returns:
         (facedb.Person)
     """
 
     facecode = np.asarray(facecode)
-    assert_db_open()
+    session = assert_session(session)
 
     similar_persons = find_similar_persons(facecode)
 

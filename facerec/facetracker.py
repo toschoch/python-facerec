@@ -7,10 +7,11 @@ import logging
 import uuid
 import numpy as np
 from collections import deque
-from threading import RLock, Thread, Timer
+from threading import RLock, Thread
 
 from .utils import RepeatingTimer
 from .dlib_api import detect_and_identify_faces
+from .facedb import Session
 
 import dlib
 

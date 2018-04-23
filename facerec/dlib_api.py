@@ -9,8 +9,8 @@ import numpy as np
 import pkg_resources
 
 detector = dlib.get_frontal_face_detector()
-sp = dlib.shape_predictor(pkg_resources.resource_filename('facerec',r'models\shape_predictor_68_face_landmarks.dat'))
-facerec = dlib.face_recognition_model_v1(pkg_resources.resource_filename('facerec',r'models\dlib_face_recognition_resnet_model_v1.dat'))
+sp = dlib.shape_predictor(pkg_resources.resource_filename('facerec',r'models/shape_predictor_68_face_landmarks.dat'))
+facerec = dlib.face_recognition_model_v1(pkg_resources.resource_filename('facerec',r'models/dlib_face_recognition_resnet_model_v1.dat'))
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ def detect_and_identify_faces(image):
 
     """
 
-    from .facedb import Person, identify_person
+    from .facedb import identify_person
 
     dets = detector(image, 1)
 

@@ -45,5 +45,5 @@ docs/_build
 output/
 
 # data files
-**/data/*
+facerec/data/*
 !facerec/data/.gitkeep

@@ -1,5 +1,4 @@
 from facerec import facedb
-from facerec.facedb import Person, Image
 import sqlalchemy.orm
 import os
 import numpy as np
@@ -24,14 +23,15 @@ def test_db_creation(tmpdb):
 def test_persons(tmpdb):
     print(facedb.persons())
     code = np.random.rand(128)
-    facedb.session.add(facedb.Person(name='Tobias Schoch',code=code))
+    session = facedb.assert_session()
+    session.add(facedb.Person(name='Tobias Schoch',code=code))
 
     p = facedb.persons()[0]
     assert np.all(p.code==code)
 
 
 def test_comparison(tmpdb):
-    facedb.assert_db_open()
+
     codes = np.random.rand(10,128)
     for i in range(10):
         code = codes[i,:]
