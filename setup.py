@@ -66,7 +66,7 @@ setup(
     include_package_data=True,
     author='Tobias Schoch',
     install_requires=install_requires,
-    tests_require=['pytest'],
+    tests_require=['pytest','cv2'],
     dependency_links=dependency_links,
     author_email='tobias.schoch@helbling.ch'
 )
