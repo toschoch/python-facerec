@@ -29,11 +29,11 @@ def test_teach_tos(tmpdb):
     img = cv2.imread(os.path.join(here, 'data', "Tobias_Schoch_TOS_big (Large).jpg"))
     persons = facerec.dlib_api.detect_and_identify_faces(img)
     assert len(persons)==1
-    assert persons[0][-1].name == "Tobias Schoch"
+    assert persons[0][0].name == "Tobias Schoch"
 
     img = cv2.imread(os.path.join(here, 'data', r"David_Fries_FDA_big (Large).jpg"))
     persons = facerec.dlib_api.detect_and_identify_faces(img)
     assert len(persons) == 1
-    person = persons[0][-1]
+    person = persons[0][0]
     print(person.id)
     print(person.name)

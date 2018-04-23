@@ -21,7 +21,7 @@ def detect_and_identify_faces(image):
         image: (np.array, cv.array) image given by 3d int array.
 
     Returns:
-        list of 3-tuple (rect, shape, Person)
+        list of 3-tuple (Person, rect, shape)
 
     """
 
@@ -41,7 +41,7 @@ def detect_and_identify_faces(image):
         # distance between them less than 0.6 then they are from the same
         # person, otherwise they are from different people.
         facecode = np.asarray(facerec.compute_face_descriptor(image, shape))
-        persons.append((d, shape, identify_person(facecode)))
+        persons.append((identify_person(facecode), d, shape))
 
     return persons
 
@@ -55,7 +55,7 @@ def teach_person(image, name=None, id=None, weight=1.0):
         weight: (float, default 1.0) weight to assign to specific face code in teaching.
 
     Returns:
-        Person
+        3-tuple (Person, rect, shape)
 
     """
 
@@ -70,5 +70,5 @@ def teach_person(image, name=None, id=None, weight=1.0):
         shape = sp(image, dets[0])
         facecode = np.asarray(facerec.compute_face_descriptor(image, shape))
         person = teach(facecode, name, id, weight=weight)
-        return (dets[0], shape, person)
+        return (person, dets[0], shape)
 

@@ -9,7 +9,7 @@ import pathlib
 
 from sqlalchemy import Column, ForeignKey, Integer, String, UniqueConstraint, ARRAY, Float
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, make_transient
 from sqlalchemy import create_engine
 from sqlalchemy import types, asc
 from sqlalchemy.orm.exc import NoResultFound
