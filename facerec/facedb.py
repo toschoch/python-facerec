@@ -59,7 +59,7 @@ class Image(Base):
     __tablename__ = 'images'
     # Here we define columns for the table person
     # Notice that each column is also a normal Python instance attribute.
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, ForeignKey("persons.id"), primary_key=True)
     filename = Column(String(250), nullable=False, unique=True)
     person_id = Column(Integer, ForeignKey("persons.id"))
 
@@ -101,26 +101,60 @@ def images():
     return session.query(Image).all()
 
 def find_similar_persons(encoding):
-    """ returns the sql persons with similar faces corresponding to the encoding """
+    """
+    returns the sql persons with similar faces corresponding to the encoding, sorted by similarity.
+    Args:
+        encoding: (np.array, cv.array) with 128-d face feature vector.
+
+    Returns:
+        (list of Persons) with
+    """
     #TODO: remove loading of all encodings
     encodings = np.vstack((p.code for p in persons()))
     distances = np.sqrt(np.sum((encodings - encoding[None,:])**2,axis=1))
     #I = np.argsort(distances)
-    I = np.where(distances < 0.7)[0] + 1
-    return session.query(Person).filter(Person.id.in_(I.tolist())).all()
+    I = np.where(distances < 0.7)[0]
+    similar_persons = np.asarray(session.query(Person).filter(Person.id.in_((I+1).tolist())).all())
+    similar_persons = similar_persons[np.argsort(distances[I])].tolist()
+    return similar_persons
 
-def get_person(name):
-    """ return the sql person corresponding to the name """
-    return session.query(Person).filter(Person.name == name).one()
 
-def teach(facecode, name, weight=1.0):
-    """ teach the classifier that the facecode is of the specified person """
+def get_person(name=None, id=None):
+    """
+    returns the first sql person corresponding to the name
+    Args:
+        name: (str) name of the person in the face database (either name or id has to be specified)
+        id: (int) id of the person in the face database (either name or id has to be specified)
+
+    Returns:
+        (facedb.Person)
+
+    """
+    if id is not None:
+        return session.query(Person).filter(Person.id == id).one()
+    elif name is not None:
+        return session.query(Person).filter(Person.name == name).one()
+    else:
+        raise ValueError("either name or id must be specified!")
+
+def teach(facecode, name=None, id=None, weight=1.0):
+    """
+    teach the classifier that the facecode is of the specified person
+    Args:
+        facecode:
+        name: (str) name of the person in the face database (either name or id has to be specified)
+        id: (int) id of the person in the face database (either name or id has to be specified)
+        weight: (float, default 1.0) weight to assign to specific face code in teaching.
+
+    Returns:
+        Person
+    """
 
     facecode = np.asarray(facecode)
     assert_db_open()
 
     try:
-        p = get_person(name)
+        p = get_person(name, id)
 
         # update the centroid
         new_nmeans = p.nmeans + weight
@@ -128,6 +162,8 @@ def teach(facecode, name, weight=1.0):
         p.nmeans = new_nmeans
 
     except NoResultFound:
+        if name is None:
+            raise ValueError("face unknown and no name is specified! Specify a name...")
         p = Person(name=name, code=facecode)
         session.add(p)
 
@@ -137,6 +173,14 @@ def teach(facecode, name, weight=1.0):
     return p
 
 def identify_person(facecode):
+    """
+    search for similar faces in database, return most similar person and assure the entry for every unknown face.
+    Args:
+        facecode: (np.array, cv.array) with 128-d face feature vector.
+
+    Returns:
+        (facedb.Person)
+    """
 
     facecode = np.asarray(facecode)
     assert_db_open()
@@ -144,14 +188,15 @@ def identify_person(facecode):
     similar_persons = find_similar_persons(facecode)
 
     if len(similar_persons) == 0:
-        p = Person(name='unkown', code=facecode)
+        log.info("found unknown face add to database...")
+        p = Person(name='unknown', code=facecode)
         session.add(p)
 
     elif len(similar_persons) == 1:
         p = similar_persons[0]
 
     else:
-        print("found multiple candidates but return the most similar...")
+        log.info("found multiple candidates but return the most similar...")
         p = similar_persons[0]
 
     if not nocommit:

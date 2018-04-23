@@ -5,16 +5,23 @@ import os
 import numpy as np
 import pytest
 
-# Sample Test passing with nose and pytest
-def test_path():
-    print(facedb.get_db_path())
+@pytest.fixture(scope='function')
+def tmpdb(tmpdir):
+    facedb.set_db_path(tmpdir)
+    return tmpdir
 
-def test_db_creation():
+# Sample Test passing with nose and pytest
+def test_path(tmpdb):
+    assert os.path.exists(facedb.get_db_path())
+    assert os.path.isdir(facedb.get_db_path())
+    assert tmpdb == facedb.get_db_path()
+
+def test_db_creation(tmpdb):
     facedb.open_db()
     assert os.path.exists(facedb.get_db_file())
     assert os.path.isfile(facedb.get_db_file())
 
-def test_persons():
+def test_persons(tmpdb):
     print(facedb.persons())
     code = np.random.rand(128)
     facedb.session.add(facedb.Person(name='Tobias Schoch',code=code))
@@ -23,8 +30,7 @@ def test_persons():
     assert np.all(p.code==code)
 
 
-def test_comparison():
-    facedb.nocommit = True
+def test_comparison(tmpdb):
     facedb.assert_db_open()
     codes = np.random.rand(10,128)
     for i in range(10):
