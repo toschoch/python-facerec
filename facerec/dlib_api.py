@@ -14,7 +14,7 @@ facerec = dlib.face_recognition_model_v1(pkg_resources.resource_filename('facere
 
 log = logging.getLogger(__name__)
 
-def detect_and_identify_faces(image):
+def detect_and_identify_faces(image, session=None):
     """
     detects faces in image given and identifies the persons corresponding to the faces.
     Args:
@@ -41,11 +41,11 @@ def detect_and_identify_faces(image):
         # distance between them less than 0.6 then they are from the same
         # person, otherwise they are from different people.
         facecode = np.asarray(facerec.compute_face_descriptor(image, shape))
-        persons.append((identify_person(facecode), d, shape))
+        persons.append((identify_person(facecode, session=session), d, shape))
 
     return persons
 
-def teach_person(image, name=None, id=None, weight=1.0):
+def teach_person(image, name=None, id=None, weight=1.0, session=None):
     """
     teach the face recognition system that the given image containes a exactly one face of specified person.
     Args:
@@ -69,6 +69,6 @@ def teach_person(image, name=None, id=None, weight=1.0):
     else:
         shape = sp(image, dets[0])
         facecode = np.asarray(facerec.compute_face_descriptor(image, shape))
-        person = teach(facecode, name, id, weight=weight)
+        person = teach(facecode, name, id, weight=weight, session=session)
         return (person, dets[0], shape)
 

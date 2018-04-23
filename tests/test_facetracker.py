@@ -4,10 +4,13 @@
 # author:  TOS
 
 import logging
+import os
 import cv2
 from facerec.facetracker import FaceTracker
 
 log = logging.getLogger(__name__)
+
+here = os.path.split(__file__)[0]
 
 def test_webcamstream():
 
@@ -15,7 +18,6 @@ def test_webcamstream():
     cam = cv2.VideoCapture(0)
     color_green = (0, 255, 0)
     line_width = 3
-
 
     while True:
         ret_val, img = cam.read()

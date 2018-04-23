@@ -6,12 +6,13 @@
 import logging
 import uuid
 import numpy as np
+import copy
 from collections import deque
 from threading import RLock, Thread
 
 from .utils import RepeatingTimer
 from .dlib_api import detect_and_identify_faces
-from .facedb import Session
+from .facedb import assert_session
 
 import dlib
 
@@ -42,7 +43,8 @@ class FaceTracker(object):
     @staticmethod
     def _verify_identify(frame, tracked_faces, max_rel_shift):
         log.info("verify the frame")
-        persons = detect_and_identify_faces(frame)
+        session = assert_session()
+        persons = detect_and_identify_faces(frame, session)
         for person, rect, shapes in persons:
             face_coordinates = np.asarray(
                 [rect.left(), rect.top(), rect.right(), rect.bottom()])
@@ -50,7 +52,7 @@ class FaceTracker(object):
             for track_id, face in tracked_faces.items():
                 if FaceTracker.is_same_face(face.coords(), face_coordinates, max_rel_shift):
                     del tracked_faces[track_id]
-                    face.set(name=person.name)
+                    face.set(name=copy.copy(person.name))
                     break
 
     def verify(self, frame):

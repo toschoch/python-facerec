@@ -14,6 +14,11 @@ import facerec.facedb
 
 here = os.path.split(__file__)[0]
 
+def test_teach_tos_commit():
+    for f in glob.glob(os.path.join(here, 'data', "*.jpg")):
+        img = cv2.imread(f)
+        facerec.dlib_api.teach_person(img, "Tobias Schoch")
+
 def test_teach_tos(tmpdb):
     for f in glob.glob(os.path.join(here, 'data', "*.jpg")):
         f = pathlib.Path(f)
