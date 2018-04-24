@@ -16,6 +16,7 @@ class RepeatingTimer(object):
         self.kwargs = kwargs
         self.function = function
         self.interval = interval
+        self._thread = None
 
     def start(self):
         self.callback()
@@ -26,4 +27,6 @@ class RepeatingTimer(object):
     def callback(self):
         if self.interval:
             self.function(*self.args, **self.kwargs)
-            Timer(self.interval, self.callback, ).start()
+            self._thread = Timer(self.interval, self.callback)
+            self._thread.daemon = True
+            self._thread.start()

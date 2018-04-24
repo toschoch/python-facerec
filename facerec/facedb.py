@@ -9,7 +9,7 @@ import pathlib
 
 from sqlalchemy import Column, ForeignKey, Integer, String, UniqueConstraint, ARRAY, Float
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, scoped_session, Session as SqlSession
+from sqlalchemy.orm import sessionmaker, scoped_session, Session as SqlSession, make_transient_to_detached, make_transient
 from sqlalchemy import create_engine
 from sqlalchemy import types, asc
 from sqlalchemy.orm.exc import NoResultFound
@@ -216,3 +216,7 @@ def identify_person(facecode, session=None):
         session.commit()
 
     return p
+
+def close():
+    if Session is not None:
+        Session.remove()

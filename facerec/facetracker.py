@@ -42,7 +42,6 @@ class FaceTracker(object):
 
     @staticmethod
     def _verify_identify(frame, tracked_faces, max_rel_shift):
-        log.info("verify the frame")
         session = assert_session()
         persons = detect_and_identify_faces(frame, session)
         for person, rect, shapes in persons:
@@ -54,6 +53,7 @@ class FaceTracker(object):
                     del tracked_faces[track_id]
                     face.set(name=copy.copy(person.name))
                     break
+        session.close_all()
 
     def verify(self, frame):
         self._verification_thread = Thread(target=FaceTracker._verify_identify, args=(frame, self.tracked_faces.copy(), self.max_rel_shift))
@@ -119,6 +119,7 @@ class FaceTracker(object):
 
     def get_tracked_faces(self):
         return self.tracked_faces.copy()
+
 
 class TrackedFace(object):
     """ a face tracked in video stream """
