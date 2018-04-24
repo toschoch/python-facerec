@@ -10,6 +10,19 @@ A python library to provide out of the box human face identification, based on d
 
 Change-Log
 ----------
+##### 0.0.2
+* add test data
+* add the test data files
+* fixed the threading issue with sqlalchemy etc
+* proposal scoped session
+* mad scoped session sqlalchemy
+* add facetracker
+* added requirements
+* tests for dlib_api
+* some work on dlib_api
+* update readme
+* facedb concepts ready
+
 ##### 0.0.1
 * initial version
 
