@@ -171,16 +171,20 @@ def teach(facecode, name=None, id=None, weight=1.0, session=None):
     try:
         p = get_person(name, id)
 
-        # update the centroid
-        new_nmeans = p.nmeans + weight
-        p.code = ((p.code * p.nmeans) + facecode * weight) / new_nmeans
-        p.nmeans = new_nmeans
-
     except NoResultFound:
+
         if name is None:
             raise ValueError("face unknown and no name is specified! Specify a name...")
-        p = Person(name=name, code=facecode)
-        session.add(p)
+
+        # find similar face and update name
+        p = identify_person(facecode, session)
+        p.name = name
+
+    # teach
+    # update the centroid
+    new_nmeans = p.nmeans + weight
+    p.code = ((p.code * p.nmeans) + facecode * weight) / new_nmeans
+    p.nmeans = new_nmeans
 
     if not nocommit:
         session.commit()
