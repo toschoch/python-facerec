@@ -118,7 +118,10 @@ def find_similar_persons(encoding, session=None):
     session = assert_session(session)
 
     #TODO: remove loading of all encodings
-    encodings = np.vstack((p.code for p in persons()))
+    _persons = [p.code for p in persons()]
+    if len(_persons) < 1:
+        return []
+    encodings = np.vstack(_persons)
     distances = np.sqrt(np.sum((encodings - encoding[None,:])**2,axis=1))
     #I = np.argsort(distances)
     I = np.where(distances < 0.7)[0]
