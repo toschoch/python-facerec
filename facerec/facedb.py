@@ -82,8 +82,8 @@ def set_db_path(path, persistent=False):
     assert path.exists()
     if persistent:
         log.info("write config file {}...".format(__db_config_file))
-        with open(__db_config_file,'w+') as fp:
-            json.dump({'path':path},fp)
+        with open(__db_config_file.expanduser(),'w+') as fp:
+            json.dump({'path':str(path)},fp)
     __db_path = path
     open_db()
 
