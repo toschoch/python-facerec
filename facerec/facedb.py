@@ -84,6 +84,10 @@ def open_db():
     global Session
 
     __engine = create_engine('sqlite:///{}'.format(get_db_file()))
+    if get_db_file().exists():
+        log.info("Use existing database ({})...".format(get_db_file()))
+    else:
+        log.info("Create new empty database ({})...".format(get_db_file()))
     Base.metadata.create_all(__engine)
     session_factory = sessionmaker(bind=__engine)
     Session = scoped_session(session_factory)
