@@ -13,13 +13,18 @@ from sqlalchemy.orm import sessionmaker, scoped_session, Session as SqlSession, 
 from sqlalchemy import create_engine
 from sqlalchemy import types, asc
 from sqlalchemy.orm.exc import NoResultFound
+import json
 
 import numpy as np
 
-
 log = logging.getLogger(__name__)
 
-__db_path = pathlib.Path(pkg_resources.resource_filename('facerec','data'))
+__db_config_file = pathlib.Path('~/.facerec.json')
+try:
+    with open(__db_config_file,'r') as fp:
+        __db_path = pathlib.Path(json.load(fp)['path'])
+except:
+    __db_path = pathlib.Path(pkg_resources.resource_filename('facerec','data'))
 __db_file = 'face.db'
 
 __engine = None
@@ -69,12 +74,16 @@ def get_db_path():
 def get_db_file():
     return __db_path.joinpath(__db_file)
 
-def set_db_path(path):
+def set_db_path(path, persistent=False):
 
     global __db_path
 
     path = pathlib.Path(path)
     assert path.exists()
+    if persistent:
+        log.info("write config file {}...".format(__db_config_file))
+        with open(__db_config_file,'w+') as fp:
+            json.dump({'path':path},fp)
     __db_path = path
     open_db()
 

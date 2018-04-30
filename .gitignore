@@ -47,3 +47,4 @@ output/
 # data files
 facerec/data/*
 !facerec/data/.gitkeep
+!facerec/data/dbconfig.json
