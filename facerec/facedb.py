@@ -19,7 +19,7 @@ import numpy as np
 
 log = logging.getLogger(__name__)
 
-__db_config_file = pathlib.Path('~/.facerec.json')
+__db_config_file = pathlib.Path('~/.facerec.json').expanduser()
 try:
     with open(__db_config_file,'r') as fp:
         __db_path = pathlib.Path(json.load(fp)['path'])
