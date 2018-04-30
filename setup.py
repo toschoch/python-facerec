@@ -50,7 +50,7 @@ setup(
     include_package_data=True,
     author='Tobias Schoch',
     install_requires=install_requires,
-    tests_require=['pytest'],
+    tests_require=['pytest','opencv-python>=3.4.0'],
     dependency_links=dependency_links,
     author_email='tobias.schoch@helbling.ch'
 )
