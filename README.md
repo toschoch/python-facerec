@@ -10,6 +10,18 @@ A python library to provide out of the box human face identification, based on d
 
 Change-Log
 ----------
+##### 0.0.3
+* add facerec server client
+* store absolute path in configfile
+* fixed bug in db config path
+* fixed path issues
+* added persistent database path configuration
+* add logging for existing database
+* remove opencv dependency
+* bug that a subsequent teach updates a previously unkown face
+* fixed bug identify with no teached face crashes
+* added models to manifest
+
 ##### 0.0.2
 * add test data
 * add the test data files
