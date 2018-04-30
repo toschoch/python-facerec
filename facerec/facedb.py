@@ -56,7 +56,6 @@ class Person(Base):
     code = Column(FaceCode(1024), nullable=False)
     nmeans = Column(Float, nullable=False, default=1.0)
 
-    #code = Column(ARRAY(Float, dimensions=1024))
 
 
 # class Image(Base):

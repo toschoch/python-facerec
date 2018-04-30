@@ -14,6 +14,34 @@ facerec = dlib.face_recognition_model_v1(pkg_resources.resource_filename('facere
 
 log = logging.getLogger(__name__)
 
+def detect_faces(image, session=None):
+    """
+    detects faces in image given and identifies the persons corresponding to the faces.
+    Args:
+        image: (np.array, cv.array) image given by 3d int array.
+
+    Returns:
+        list of 2-tuple, 128D-array (face codes, rect, shape)
+
+    """
+    dets = detector(image, 1)
+
+    persons = []
+    for k, d in enumerate(dets):
+        # print("Detection {}: Left: {} Top: {} Right: {} Bottom: {}".format(
+        #     k, d.left(), d.top(), d.right(), d.bottom()))
+        # Get the landmarks/parts for the face in box d.
+        shape = sp(image, d)
+
+        # Compute the 128D vector that describes the face in img identified by
+        # shape.  In general, if two face descriptor vectors have a Euclidean
+        # distance between them less than 0.6 then they are from the same
+        # person, otherwise they are from different people.
+        facecode = np.asarray(facerec.compute_face_descriptor(image, shape))
+        persons.append((facecode, d, shape))
+
+    return persons
+
 def detect_and_identify_faces(image, session=None):
     """
     detects faces in image given and identifies the persons corresponding to the faces.
