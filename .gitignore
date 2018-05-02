@@ -48,3 +48,5 @@ output/
 facerec/data/*
 !facerec/data/.gitkeep
 !facerec/data/dbconfig.json
+tests/data/*
+!tests/data/.gitkeep
