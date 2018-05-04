@@ -2,6 +2,9 @@ Human Face Recognition
 ===============================
 author: Tobias Schoch
 
+Just to make it clear from the beginning. This is just a convenient wrapper of the awsome _dlib_
+library (<https://pypi.org/project/dlib/>) by Davis King. **He did the hard work!!**
+
 Overview
 --------
 
