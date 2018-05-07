@@ -6,6 +6,7 @@
 import logging
 import uuid
 import numpy as np
+import time
 import copy
 from collections import deque
 from multiprocessing import Process, Manager, Event
@@ -73,6 +74,17 @@ class FaceTracker(object):
 
         self._identifier.start()
 
+        TrackedFace.on_disappearance = self._on_disappearance
+        TrackedFace.on_appearance = self._on_appearance
+
+    @staticmethod
+    def _on_disappearance(face):
+        if face['identified']:
+            log.error("disappeared: {}".format(face))
+
+    @staticmethod
+    def _on_appearance(face):
+        log.error("'appeared: {}".format(face))
 
     @staticmethod
     def _verify_identify_server(shared, api, max_rel_shift):
@@ -86,6 +98,8 @@ class FaceTracker(object):
             for track_id, face in shared['tracked_faces'].items():
                 if FaceTracker.is_same_face(face['coords'], face_coordinates, max_rel_shift):
                     face["name"]=copy.copy(person['name'])
+                    face["face_id"]=copy.copy(person['id'])
+                    face['identified'] = True
                     break
 
     @staticmethod
@@ -99,6 +113,8 @@ class FaceTracker(object):
             for track_id, face in shared['tracked_faces'].items():
                 if FaceTracker.is_same_face(face['coords'], face_coordinates, max_rel_shift):
                     face["name"]=copy.copy(person.name)
+                    face["face_id"]=copy.copy(person.id)
+                    face['identified'] = True
                     break
         session.close_all()
 
@@ -132,10 +148,10 @@ class FaceTracker(object):
 
             if this_face is None:
                 # create new tracked face
-                _shared_data = self.memory_manager.dict()
-                this_face = TrackedFace(_shared_data)
+                this_face = TrackedFace(self.memory_manager.dict(),on_appearance=self._on_appearance, on_disappearance=self._on_disappearance)
                 track_id = this_face.id()
-                self._shared['tracked_faces'][track_id]=_shared_data
+                self._shared['tracked_faces'][track_id]=this_face._shared
+
                 this_face.update_in_frame(face_coordinates)
                 any_new_faces = True
             else:
@@ -148,9 +164,14 @@ class FaceTracker(object):
             if face._not_in_frame < self.missing_tol_nframes:
                 faces_recently_in_frame.append((track_id, face))
 
+        tracked_faces = dict(faces_in_frame + faces_recently_in_frame)
+        for track_id, face in self.tracked_faces.items():
+            if track_id not in tracked_faces.keys():
+                face.disappeared()
+
         self.tracked_faces.clear()
         self._shared['tracked_faces'].clear()
-        for track_id, face in faces_in_frame + faces_recently_in_frame:
+        for track_id, face in tracked_faces.items():
             self.tracked_faces[track_id] = face
             self._shared['tracked_faces'][track_id] = face._shared
 
@@ -168,12 +189,35 @@ class FaceTracker(object):
 class TrackedFace():
     """ a face tracked in video stream """
 
-    def __init__(self, shared_data):
+    def __init__(self, shared_data, on_appearance=None, on_disappearance=None):
 
         self._tracker_id = uuid.uuid4()
         self._coords_buffer = deque(maxlen=5)
         self._shared = shared_data
         self._shared['id'] = self._tracker_id
+        self._shared['identified'] = False
+        self._shared['disappeared'] = False
+
+        self.on_appearance = on_appearance
+        self.on_disappearance = on_disappearance
+        self.appeared()
+
+
+    @staticmethod
+    def _on_appearance_proxy(face, on_appearance):
+        face['appeared'] = time.time()
+        while not face['identified'] and not face['disappeared']:
+            time.sleep(0.05)
+        if not face['disappeared']:
+            on_appearance(face)
+
+    def appeared(self):
+        if self.on_appearance is not None:
+            Process(target=self._on_appearance_proxy, args=(self._shared, self.on_appearance)).start()
+
+    def disappeared(self):
+        if self.on_disappearance is not None:
+            Process(target=self.on_disappearance, args=(self._shared,)).start()
 
     def name(self, *args, **kwargs):
         return self._shared.get('name',*args, **kwargs)
@@ -199,5 +243,3 @@ class TrackedFace():
 
     def update_not_in_frame(self):
         self._not_in_frame += 1
-
-
