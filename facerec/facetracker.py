@@ -79,12 +79,11 @@ class FaceTracker(object):
 
     @staticmethod
     def _on_disappearance(face):
-        if face['identified']:
-            log.error("disappeared: {}".format(face))
+        log.debug("disappeared: {}".format(face))
 
     @staticmethod
     def _on_appearance(face):
-        log.error("'appeared: {}".format(face))
+        log.debug("appeared: {}".format(face))
 
     @staticmethod
     def _verify_identify_server(shared, api, max_rel_shift):
@@ -211,13 +210,18 @@ class TrackedFace():
         if not face['disappeared']:
             on_appearance(face)
 
+    @staticmethod
+    def _on_disappearance_proxy(face, on_disappearance):
+        face['disappeared'] = time.time()
+        on_disappearance(face)
+
     def appeared(self):
         if self.on_appearance is not None:
             Process(target=self._on_appearance_proxy, args=(self._shared, self.on_appearance)).start()
 
     def disappeared(self):
         if self.on_disappearance is not None:
-            Process(target=self.on_disappearance, args=(self._shared,)).start()
+            Process(target=self._on_disappearance_proxy, args=(self._shared, self.on_disappearance)).start()
 
     def name(self, *args, **kwargs):
         return self._shared.get('name',*args, **kwargs)
