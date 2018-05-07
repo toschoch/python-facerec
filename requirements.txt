@@ -1,4 +1,5 @@
 dlib>=19.8.1
 numpy>=1.14.2
 SQLAlchemy>=1.2.6
+requests
 pillow

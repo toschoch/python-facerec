@@ -57,16 +57,6 @@ class Person(Base):
     nmeans = Column(Float, nullable=False, default=1.0)
 
 
-
-# class Image(Base):
-#     __tablename__ = 'images'
-#     # Here we define columns for the table person
-#     # Notice that each column is also a normal Python instance attribute.
-#     id = Column(Integer, ForeignKey("persons.id"), primary_key=True)
-#     filename = Column(String(250), nullable=False, unique=True)
-#     person_id = Column(Integer, ForeignKey("persons.id"))
-
-
 def get_db_path():
     return __db_path
 
@@ -112,10 +102,6 @@ def assert_session(session=None):
 def persons(session=None):
     session = assert_session(session)
     return session.query(Person).order_by(asc(Person.id)).all()
-
-# def images():
-#     assert_db_open()
-#     return session.query(Image).all()
 
 def find_similar_persons(encoding, session=None):
     """

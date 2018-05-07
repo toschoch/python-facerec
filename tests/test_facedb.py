@@ -3,6 +3,7 @@ import sqlalchemy.orm
 import os
 import numpy as np
 import pytest
+import threading
 
 @pytest.fixture(scope='function')
 def tmpdb(tmpdir):
@@ -53,3 +54,22 @@ def test_comparison(tmpdb):
 
     with pytest.raises(sqlalchemy.orm.exc.NoResultFound):
         facedb.get_person('Mickey Mouse')
+
+
+def test_thread_safe(tmpdb):
+    codes = np.random.rand(10, 128)
+    for i in range(10):
+        code = codes[i, :]
+        facedb.teach(code, name='Tobias Schoch {}'.format(i))
+        # facedb.session.add(facedb.Person(name='Tobias Schoch {}'.format(i),code=code))
+
+    p = facedb.persons()
+
+    print(p)
+
+    def _print_person(p):
+        print(p.name)
+
+    thread = threading.Thread(target=_print_person,args=(p[3],))
+    thread.start()
+    thread.join()

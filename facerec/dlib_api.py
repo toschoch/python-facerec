@@ -14,14 +14,14 @@ facerec = dlib.face_recognition_model_v1(pkg_resources.resource_filename('facere
 
 log = logging.getLogger(__name__)
 
-def detect_faces(image, session=None):
+def detect_faces(image):
     """
     detects faces in image given and identifies the persons corresponding to the faces.
     Args:
         image: (np.array, cv.array) image given by 3d int array.
 
     Returns:
-        list of 2-tuple, 128D-array (face codes, rect, shape)
+        list of 3-tuple, 128D-array (face codes, rect, shape)
 
     """
     dets = detector(image, 1)
@@ -87,7 +87,7 @@ def teach_person(image, name=None, id=None, weight=1.0, session=None):
 
     """
 
-    from .facedb import teach, get_person
+    from .facedb import teach
 
     dets = detector(image, 1)
     if len(dets) > 1:

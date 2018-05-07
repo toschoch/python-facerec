@@ -39,5 +39,5 @@ def test_teach_tos(tmpdb):
     persons = facerec.dlib_api.detect_and_identify_faces(img)
     assert len(persons) == 1
     person = persons[0][0]
-    print(person.id)
-    print(person.name)
+    assert person.id == 2
+    assert person.name == 'unknown'

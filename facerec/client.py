@@ -36,7 +36,7 @@ class FacerecApi(object):
     def identify_image(self, image):
         buffer = self.compress_image(image)
         # encode face code and send to identify
-        payload = {'image': base64.b64encode(buffer.getvalue()).decode('ascii')}
+        payload = {'image': base64.b64encode(buffer).decode('ascii')}
         r = requests.post(self.url+'/image/teach', json=payload)
         return r.json()
 
@@ -49,6 +49,18 @@ class FacerecApi(object):
         if id is not None:
             payload['id'] = id
         r = requests.post(self.url+'/image/teach', json=payload)
+        return r.json()
+
+
+    def delete_face(self, name=None, id=None):
+
+        payload = {}
+        if name is not None:
+            payload['name'] = name
+        if id is not None:
+            payload['id'] = id
+
+        r = requests.delete(self.url+'/image/faces', json=payload)
         return r.json()
 
     @staticmethod

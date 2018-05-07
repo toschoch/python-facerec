@@ -21,7 +21,12 @@ def test_identify_image(client):
 def test_identify_code(client):
     img = cv2.imread(os.path.join(here, 'data', "Tobias_Schoch_TOS_big (Large).jpg"))
     facecode, rect, shape = detect_faces(img)[0]
-    print(client.identify_facecode(facecode))
+    p = client.identify_facecode(facecode)
+    print(p)
+
+def test_delete_face(client):
+    client.delete_face(id=1)
+    print(client.faces())
 
 def test_teach_code(client):
     img = cv2.imread(os.path.join(here, 'data', "Tobias_Schoch_TOS_big (Large).jpg"))
