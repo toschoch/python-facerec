@@ -18,7 +18,6 @@ from .client import FacerecApi
 import dlib
 
 log = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
 
 class Identifier(Process):
     def __init__(self, interval, function, args=[], kwargs={}):
