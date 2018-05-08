@@ -33,11 +33,12 @@ def test_webcamstream_tracker_local():
                 break  # esc to quit
     finally:
         cv2.destroyAllWindows()
+        tracker.stop()
         facedb.close()
 
 def test_webcamstream_tracker_server():
-
     tracker = FaceTracker(url='http://localhost:8081')
+
     cam = cv2.VideoCapture(0)
     color_green = (0, 255, 0)
     line_width = 3
@@ -55,4 +56,5 @@ def test_webcamstream_tracker_server():
                 break  # esc to quit
     finally:
         cv2.destroyAllWindows()
+        tracker.stop()
         facedb.close()

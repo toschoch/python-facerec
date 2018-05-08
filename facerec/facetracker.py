@@ -10,6 +10,7 @@ import time
 import copy
 from collections import deque
 from multiprocessing import Process, Manager, Event
+from threading import Thread #as Process, Event
 
 from .dlib_api import detect_and_identify_faces, detect_faces
 from .facedb import assert_session
@@ -73,16 +74,16 @@ class FaceTracker(object):
 
         self._identifier.start()
 
-        TrackedFace.on_disappearance = self._on_disappearance
-        TrackedFace.on_appearance = self._on_appearance
+        TrackedFace.on_disappearance = self.on_disappearance
+        TrackedFace.on_appearance = self.on_appearance
 
     @staticmethod
-    def _on_disappearance(face):
-        log.debug("disappeared: {}".format(face))
+    def on_disappearance(face):
+        pass
 
     @staticmethod
-    def _on_appearance(face):
-        log.debug("appeared: {}".format(face))
+    def on_appearance(face):
+        pass
 
     @staticmethod
     def _verify_identify_server(shared, api, max_rel_shift):
@@ -146,7 +147,7 @@ class FaceTracker(object):
 
             if this_face is None:
                 # create new tracked face
-                this_face = TrackedFace(self.memory_manager.dict(),on_appearance=self._on_appearance, on_disappearance=self._on_disappearance)
+                this_face = TrackedFace(self.memory_manager.dict(),on_appearance=self.on_appearance, on_disappearance=self.on_disappearance)
                 track_id = this_face.id()
                 self._shared['tracked_faces'][track_id]=this_face._shared
 
@@ -183,12 +184,18 @@ class FaceTracker(object):
     def get_tracked_faces(self):
         return self.tracked_faces.copy()
 
+    def stop(self):
+        for track_id, face in self.tracked_faces.items():
+            [p.join() for  p in face._processes]
+        self._identifier.cancel()
+        self._identifier.join()
 
 class TrackedFace():
     """ a face tracked in video stream """
 
     def __init__(self, shared_data, on_appearance=None, on_disappearance=None):
 
+        self._processes = []
         self._tracker_id = uuid.uuid4()
         self._coords_buffer = deque(maxlen=5)
         self._shared = shared_data
@@ -207,20 +214,26 @@ class TrackedFace():
         while not face['identified'] and not face['disappeared']:
             time.sleep(0.05)
         if not face['disappeared']:
+            log.info("appeared: {}".format(face))
             on_appearance(face)
 
     @staticmethod
     def _on_disappearance_proxy(face, on_disappearance):
         face['disappeared'] = time.time()
+        log.info("disappeared: {}".format(face))
         on_disappearance(face)
 
     def appeared(self):
         if self.on_appearance is not None:
-            Process(target=self._on_appearance_proxy, args=(self._shared, self.on_appearance)).start()
+            p = Thread(target=self._on_appearance_proxy, args=(self._shared, self.on_appearance))
+            self._processes.append(p)
+            p.start()
 
     def disappeared(self):
         if self.on_disappearance is not None:
-            Process(target=self._on_disappearance_proxy, args=(self._shared, self.on_disappearance)).start()
+            p = Thread(target=self._on_disappearance_proxy, args=(self._shared, self.on_disappearance))
+            self._processes.append(p)
+            p.start()
 
     def name(self, *args, **kwargs):
         return self._shared.get('name',*args, **kwargs)
