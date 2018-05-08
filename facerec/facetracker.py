@@ -196,7 +196,7 @@ class TrackedFace():
     def __init__(self, shared_data, on_appearance=None, on_disappearance=None):
 
         self._processes = []
-        self._tracker_id = uuid.uuid4()
+        self._tracker_id = str(uuid.uuid4())
         self._coords_buffer = deque(maxlen=5)
         self._shared = shared_data
         self._shared['id'] = self._tracker_id
