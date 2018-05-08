@@ -27,17 +27,22 @@ class Identifier(Process):
         self.function = function
         self.args = args
         self.kwargs = kwargs
-        self.finished = Event()
+        self.canceled = Event()
+        self.triggered = Event()
 
     def cancel(self):
         """Stop the timer if it hasn't finished yet"""
-        self.finished.set()
+        self.canceled.set()
+        self.triggered.clear()
+
+    def trigger(self):
+        self.triggered.set()
+        self.triggered.clear()
 
     def run(self):
-        self.finished.wait(self.interval)
-        if not self.finished.is_set():
+        while not self.canceled.is_set():
             self.function(*self.args, **self.kwargs)
-            self.run()
+            self.triggered.wait(self.interval)
 
 class FaceTracker(object):
     """ Trackes Faces in an concurent stream of images. """
@@ -176,8 +181,8 @@ class FaceTracker(object):
 
         self._shared['frame'] = frame.copy()
 
-        # if any_new_faces:
-        #     if self._identifier is None:
+        if any_new_faces:
+            self._identifier.trigger()
 
         return self.tracked_faces.values()
 
@@ -255,7 +260,7 @@ class TrackedFace():
     def update_in_frame(self, coords):
         self._not_in_frame = 0
         self._coords_buffer.append(coords)
-        self._shared['coords'] = self.coords()
+        self._shared['coords'] = self.coords().tolist()
 
     def update_not_in_frame(self):
         self._not_in_frame += 1
