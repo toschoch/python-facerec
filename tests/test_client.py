@@ -14,6 +14,9 @@ def client():
 def test_faces(client):
     print(client.faces())
 
+def test_names(client):
+    print(client.names())
+
 def test_identify_image(client):
     img = cv2.imread(os.path.join(here, 'data', "Tobias_Schoch_TOS_big (Large).jpg"))
     print(client.identify_image(img))

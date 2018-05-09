@@ -20,9 +20,11 @@ import numpy as np
 log = logging.getLogger(__name__)
 
 __db_config_file = pathlib.Path('~/.facerec.json').expanduser()
+__distance_threshold = 0.6
 try:
     with open(__db_config_file,'r') as fp:
         __db_path = pathlib.Path(json.load(fp)['path'])
+        __distance_threshold = float(json.load(fp).get('threshold',__distance_threshold))
 except:
     __db_path = pathlib.Path(pkg_resources.resource_filename('facerec','data'))
 __db_file = 'face.db'
@@ -72,9 +74,22 @@ def set_db_path(path, persistent=False):
     if persistent:
         log.info("write config file {}...".format(__db_config_file))
         with open(__db_config_file.expanduser(),'w+') as fp:
-            json.dump({'path':str(path.absolute())},fp)
+            json.dump(json.load(fp).update({'path':str(path.absolute())}),fp)
     __db_path = path
     open_db()
+
+def get_distance_threshold():
+    return __distance_threshold
+
+def set_distance_threshold(threshold, persistent=False):
+
+    global __distance_threshold
+
+    __distance_threshold = threshold
+    if persistent:
+        log.info("write config file {}...".format(__db_config_file))
+        with open(__db_config_file.expanduser(),'w+') as fp:
+            json.dump(json.load(fp).update({'threshold':threshold}),fp)
 
 def open_db():
 
@@ -122,7 +137,7 @@ def find_similar_persons(encoding, session=None):
     encodings = np.vstack(_persons)
     distances = np.sqrt(np.sum((encodings - encoding[None,:])**2,axis=1))
     #I = np.argsort(distances)
-    I = np.where(distances < 0.7)[0]
+    I = np.where(distances < __distance_threshold)[0]
     similar_persons = np.asarray(session.query(Person).filter(Person.id.in_((I+1).tolist())).all())
     similar_persons = similar_persons[np.argsort(distances[I])].tolist()
     return similar_persons

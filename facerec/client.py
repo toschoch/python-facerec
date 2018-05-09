@@ -52,17 +52,6 @@ class FacerecApi(object):
         return r.json()
 
 
-    def delete_face(self, name=None, id=None):
-
-        payload = {}
-        if name is not None:
-            payload['name'] = name
-        if id is not None:
-            payload['id'] = id
-
-        r = requests.delete(self.url+'/image/faces', json=payload)
-        return r.json()
-
     @staticmethod
     def compress_image(image):
         try:
