@@ -9,13 +9,18 @@ here = os.path.split(__file__)[0]
 
 @pytest.fixture()
 def client():
-    return FacerecApi("http://localhost:8081")
+    return FacerecApi("http://localhost:80")
 
 def test_faces(client):
     print(client.faces())
 
-def test_names(client):
-    print(client.names())
+def test_config(client):
+    cfg = client.config()
+    assert cfg['threshold']==0.6
+    cfg = client.set_config(threshold=0.75)
+    assert cfg['threshold']==0.75
+    cfg = client.set_config(threshold=0.6)
+    assert cfg['threshold']==0.6
 
 def test_identify_image(client):
     img = cv2.imread(os.path.join(here, 'data', "Tobias_Schoch_TOS_big (Large).jpg"))
@@ -27,8 +32,15 @@ def test_identify_code(client):
     p = client.identify_facecode(facecode)
     print(p)
 
+def test_modify_face_name(client):
+    old = client.face(1)
+    client.set_name(1,'Mickey Mouse')
+    assert client.face(1)['name']=='Mickey Mouse'
+    client.set_name(1,old['name'])
+    assert client.face(1)['name']==old['name']
+
 def test_delete_face(client):
-    client.delete_face(id=1)
+    client.delete_face(2)
     print(client.faces())
 
 def test_teach_code(client):

@@ -24,6 +24,7 @@ __distance_threshold = 0.6
 try:
     with open(__db_config_file,'r') as fp:
         __db_path = pathlib.Path(json.load(fp)['path'])
+    with open(__db_config_file, 'r') as fp:
         __distance_threshold = float(json.load(fp).get('threshold',__distance_threshold))
 except:
     __db_path = pathlib.Path(pkg_resources.resource_filename('facerec','data'))
@@ -65,6 +66,19 @@ def get_db_path():
 def get_db_file():
     return __db_path.joinpath(__db_file)
 
+
+def _update_config_file(new_config):
+    log.info("write config file {}...".format(__db_config_file))
+    config = {}
+    if __db_config_file.expanduser().exists():
+        with open(__db_config_file.expanduser(), 'r') as fp:
+            config = json.load(fp)
+    else:
+        config = {}
+    config.update(new_config)
+    with open(__db_config_file.expanduser(), 'w+') as fp:
+        json.dump(config, fp)
+
 def set_db_path(path, persistent=False):
 
     global __db_path
@@ -72,9 +86,7 @@ def set_db_path(path, persistent=False):
     path = pathlib.Path(path)
     assert path.exists()
     if persistent:
-        log.info("write config file {}...".format(__db_config_file))
-        with open(__db_config_file.expanduser(),'w+') as fp:
-            json.dump(json.load(fp).update({'path':str(path.absolute())}),fp)
+        _update_config_file({'path': str(path)})
     __db_path = path
     open_db()
 
@@ -87,9 +99,7 @@ def set_distance_threshold(threshold, persistent=False):
 
     __distance_threshold = threshold
     if persistent:
-        log.info("write config file {}...".format(__db_config_file))
-        with open(__db_config_file.expanduser(),'w+') as fp:
-            json.dump(json.load(fp).update({'threshold':threshold}),fp)
+        _update_config_file({'threshold':threshold})
 
 def open_db():
 

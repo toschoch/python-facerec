@@ -17,6 +17,23 @@ class FacerecApi(object):
     def faces(self):
         return requests.get(self.url+'/faces').json()
 
+    def config(self):
+        return requests.get(self.url+'/config').json()
+
+    def set_config(self, **kwargs):
+        for parameter, new_value in kwargs.items():
+            requests.patch(self.url+'/config/{}'.format(parameter), data={'value': new_value}).json()
+        return self.config()
+
+    def face(self, id_or_name):
+        return requests.get(self.url+'/faces/{}'.format(id_or_name)).json()
+
+    def delete_face(self, id_or_name):
+        return requests.delete(self.url+'/faces/{}'.format(id_or_name)).json()
+
+    def set_name(self, id_or_name, new_name):
+        return requests.patch(self.url+'/faces/{}'.format(id_or_name), data={'name':new_name}).json()
+
     def identify_facecode(self, code):
         # encode face code and send to identify
         payload = {'code': base64.b64encode(np.asarray(code).tobytes()).decode('ascii')}
