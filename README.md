@@ -13,6 +13,17 @@ A python library to provide out of the box human face identification, based on d
 
 Change-Log
 ----------
+##### 0.1.0
+* made identification more rigorous and improved client
+* added threshold to configuration
+* removed recursion included trigger on new face
+* fix uuid to string
+* returned to threads for on_appearance/disappearance slots
+* removed unwanted logging configuration
+* added disapearance time
+* added on appear on disappear slots
+* added real multiprocessing for performant stream
+
 ##### 0.0.3
 * add facerec server client
 * store absolute path in configfile
