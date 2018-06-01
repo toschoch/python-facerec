@@ -9,7 +9,7 @@ import numpy as np
 import time
 import copy
 from collections import deque
-from multiprocessing import Process, Manager, Event
+from multiprocessing import Manager, Event
 from threading import Thread #as Process, Event
 
 from .dlib_api import detect_and_identify_faces, detect_faces
@@ -20,7 +20,7 @@ import dlib
 
 log = logging.getLogger(__name__)
 
-class Identifier(Process):
+class Identifier(Thread):
     def __init__(self, interval, function, args=[], kwargs={}):
         super(Identifier, self).__init__()
         self.interval = interval

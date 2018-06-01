@@ -15,17 +15,6 @@ def read(fname):
 # Get the long description from the README file
 long_description = read(readme_file)
 
-changelog = read(readme_file).splitlines()
-for i,line in enumerate(changelog):
-    if line.startswith('Change-Log'):
-        line = changelog[i+1]
-        j = 1
-        while line.strip()=='' or line.startswith('---'):
-            j += 1
-            line = changelog[i+j]
-        version = line.strip('# ')
-        break
-
 # get the dependencies and installs
 all_reqs = []
 all_reqs += read(pip_req_file).splitlines()

@@ -37,7 +37,7 @@ def test_webcamstream_tracker_local():
         facedb.close()
 
 def test_webcamstream_tracker_server():
-    tracker = FaceTracker(url='http://localhost:8081')
+    tracker = FaceTracker(url='http://192.168.0.40:3080')
 
     cam = cv2.VideoCapture(0)
     color_green = (0, 255, 0)
