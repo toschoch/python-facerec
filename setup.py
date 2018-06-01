@@ -9,7 +9,7 @@ readme_file = "README.md"
 pip_req_file = "requirements.txt"
 
 def read(fname):
-    with open(path.join(here,fname)) as fp:
+    with open(path.join(here,fname),"rb", "utf-8") as fp:
         content = fp.read()
     return content
 # Get the long description from the README file
