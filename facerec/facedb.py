@@ -6,6 +6,7 @@
 import logging
 import pkg_resources
 import pathlib
+import os
 
 from sqlalchemy import Column, ForeignKey, Integer, String, UniqueConstraint, ARRAY, Float
 from sqlalchemy.ext.declarative import declarative_base
@@ -19,7 +20,7 @@ import numpy as np
 
 log = logging.getLogger(__name__)
 
-__db_config_file = pathlib.Path('~/.facerec.json').expanduser()
+__db_config_file = pathlib.Path(os.path.expanduser('~/.facerec.json'))
 __distance_threshold = 0.6
 try:
     with open(__db_config_file,'r') as fp:
@@ -70,13 +71,14 @@ def get_db_file():
 def _update_config_file(new_config):
     log.info("write config file {}...".format(__db_config_file))
     config = {}
-    if __db_config_file.expanduser().exists():
-        with open(__db_config_file.expanduser(), 'r') as fp:
+    __db_config_file_exp = pathlib.Path(os.path.expanduser(__db_config_file))
+    if __db_config_file_exp.exists():
+        with open(__db_config_file_exp, 'r') as fp:
             config = json.load(fp)
     else:
         config = {}
     config.update(new_config)
-    with open(__db_config_file.expanduser(), 'w+') as fp:
+    with open(__db_config_file_exp, 'w+') as fp:
         json.dump(config, fp)
 
 def set_db_path(path, persistent=False):
