@@ -13,6 +13,11 @@ A python library to provide out of the box human face identification, based on d
 
 Change-Log
 ----------
+##### 0.1.1
+* removed pathlib expanduser as not available in python3.4
+* fix python 3.3. setup issue
+* switched to thread as only this works on my machine, removed buggy unneccesary changelog
+
 ##### 0.1.0
 * made identification more rigorous and improved client
 * added threshold to configuration
