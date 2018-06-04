@@ -46,7 +46,8 @@ class Identifier(Thread):
 
 class FaceTracker(object):
     """ Trackes Faces in an concurent stream of images. """
-    def __init__(self, url=None, max_relative_shift=0.8, avg_over_nframes=1, missing_tolerance_nframes=0):
+    def __init__(self, url=None, max_relative_shift=0.8, avg_over_nframes=1, missing_tolerance_nframes=0,
+                 identification_interval=10):
         """
         creates a face tracker that identifies the tracked face with facerec engine. The requests to identify can be done locally
         or sent to a facerec server by specifying the url.
@@ -55,6 +56,7 @@ class FaceTracker(object):
             max_relative_shift: (float) maximal shift of face from one frame to the other relative to face width (to be tracked as the same face)
             avg_over_nframes:  (int) optional moving average filter of the face position
             missing_tolerance_nframes: (int) how many frames should the tracker store a face that is not detected anymore (helps for short missing detection)
+            identification_interval: (float) seconds to repeat the identification request
         """
 
         self.max_rel_shift = max_relative_shift
@@ -70,11 +72,11 @@ class FaceTracker(object):
 
         if url is not None:
             self.api = FacerecApi(url)
-            self._identifier = Identifier(1.0, FaceTracker._verify_identify_server,
+            self._identifier = Identifier(identification_interval, FaceTracker._verify_identify_server,
                                           args=(self._shared, self.api, self.max_rel_shift))
         else:
             self.api = None
-            self._identifier = Identifier(1.0, FaceTracker._verify_identify_local,
+            self._identifier = Identifier(identification_interval, FaceTracker._verify_identify_local,
                                           args=(self._shared, self.max_rel_shift))
 
         self._identifier.start()
@@ -109,7 +111,7 @@ class FaceTracker(object):
 
     @staticmethod
     def _verify_identify_local(shared, max_rel_shift):
-        if 'frame' not in shared: return 
+        if 'frame' not in shared: return
         session = assert_session()
         persons = detect_and_identify_faces(shared['frame'], session)
         for person, rect, shapes in persons:
