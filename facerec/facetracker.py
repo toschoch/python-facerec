@@ -92,6 +92,7 @@ class FaceTracker(object):
 
     @staticmethod
     def _verify_identify_server(shared, api, max_rel_shift):
+        if 'frame' not in shared: return
         faces = detect_faces(shared['frame'])
         for facecode, rect, shapes in faces:
             face_coordinates = np.asarray(
@@ -108,6 +109,7 @@ class FaceTracker(object):
 
     @staticmethod
     def _verify_identify_local(shared, max_rel_shift):
+        if 'frame' not in shared: return 
         session = assert_session()
         persons = detect_and_identify_faces(shared['frame'], session)
         for person, rect, shapes in persons:
