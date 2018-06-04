@@ -13,6 +13,10 @@ A python library to provide out of the box human face identification, based on d
 
 Change-Log
 ----------
+##### 0.1.2
+* added parameter for identification interval
+* changed package name to facerec, fixed error in thread if no frame to process
+
 ##### 0.1.1
 * removed pathlib expanduser as not available in python3.4
 * fix python 3.3. setup issue
