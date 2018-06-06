@@ -1,7 +1,10 @@
-pipeline:
+
+clone:
   clone:
     image: plugins/git
     tags: true
+
+pipeline:
 
   test:
     image: python:3
@@ -18,8 +21,11 @@ pipeline:
     image: shocki/drone-devpi
     server: http://192.168.0.40:3141/
     index: dietzi/staging
-    username: dietzi
-    password: dietzi
+    secrets:
+     - source: devpi_password
+       target: plugin_password
+     - source: devpi_user
+       target: plugin_username
     when:
       branch: master
 
@@ -27,8 +33,11 @@ pipeline:
     image: shocki/drone-devpi
     server: http://192.168.0.40:3141/
     index: dietzi/stable
-    username: dietzi
-    password: dietzi
+    secrets:
+     - source: devpi_password
+       target: plugin_password
+     - source: devpi_user
+       target: plugin_username
     when:
       event: tag
       status: success
