@@ -107,6 +107,7 @@ class FaceTracker(object):
                     face["name"]=copy.copy(person['name'])
                     face["face_id"]=copy.copy(person['id'])
                     face['identified'] = True
+                    log.info("Identified: {}".format(face))
                     break
 
     @staticmethod

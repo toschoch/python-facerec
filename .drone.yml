@@ -10,16 +10,20 @@ pipeline:
     image: python:3
     commands:
       - python setup.py test
+    environment:
+      - PIP_INDEX_URL=http://dietzi.ddns.net:3141/
 
   build:
     image: python 3
       - python setup.py bdist_wheel
       - python setup.py sdist
       - python setup.py sdist --formats=zip
+    environment:
+      - PIP_INDEX_URL=http://dietzi.ddns.net:3141/
 
   staging:
     image: shocki/drone-devpi
-    server: http://192.168.0.40:3141/
+    server: http://dietzi.ddns.net:3141/
     index: dietzi/staging
     secrets:
      - source: devpi_password
@@ -31,7 +35,7 @@ pipeline:
 
   release:
     image: shocki/drone-devpi
-    server: http://192.168.0.40:3141/
+    server: http://dietzi.ddns.net:3141/
     index: dietzi/stable
     secrets:
      - source: devpi_password
