@@ -9,8 +9,8 @@ import numpy as np
 import time
 import copy
 from collections import deque
-from multiprocessing import Manager, Event, Process as Thread
-#from threading import Thread #as Process, Event
+from multiprocessing import Manager, Event#, Process as Thread
+from threading import Thread #as Process, Event
 
 from .dlib_api import detect_and_identify_faces, detect_faces
 from .facedb import assert_session
