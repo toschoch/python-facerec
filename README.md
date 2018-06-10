@@ -13,6 +13,13 @@ A python library to provide out of the box human face identification, based on d
 
 Change-Log
 ----------
+##### 0.1.3
+* improved logging events of tracker
+* try again threads
+* log info for identified face
+* use secrets in dron
+* try multiprocessing instead of thread
+
 ##### 0.1.2
 * added parameter for identification interval
 * changed package name to facerec, fixed error in thread if no frame to process
