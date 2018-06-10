@@ -58,3 +58,26 @@ def test_webcamstream_tracker_server():
         cv2.destroyAllWindows()
         tracker.stop()
         facedb.close()
+
+def test_tracker_server_logging():
+    tracker = FaceTracker(url='http://192.168.0.40:3080', missing_tolerance_nframes=10)
+
+    cam = cv2.VideoCapture(0)
+    color_green = (0, 255, 0)
+    line_width = 3
+
+    try:
+        while True:
+            ret_val, img = cam.read()
+            faces = tracker.update(img)
+            for face in faces:
+                coords = face.coords();
+                cv2.rectangle(img, (coords[0], coords[1]), (coords[2], coords[3]), color_green, line_width)
+                cv2.putText(img, face.name('not identified'), (coords[0], coords[1]-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA)
+            cv2.imshow('my webcam', img)
+            if cv2.waitKey(1) == 27:
+                break  # esc to quit
+    finally:
+        cv2.destroyAllWindows()
+        tracker.stop()
+        facedb.close()

@@ -9,7 +9,7 @@ import numpy as np
 import time
 import copy
 from collections import deque
-from multiprocessing import Manager, Event#, Process as Thread
+from multiprocessing import Manager, Event # Process as Thread
 from threading import Thread #as Process, Event
 
 from .dlib_api import detect_and_identify_faces, detect_faces
@@ -47,7 +47,7 @@ class Identifier(Thread):
 class FaceTracker(object):
     """ Trackes Faces in an concurent stream of images. """
     def __init__(self, url=None, max_relative_shift=0.8, avg_over_nframes=1, missing_tolerance_nframes=0,
-                 identification_interval=10):
+                 identification_interval=2):
         """
         creates a face tracker that identifies the tracked face with facerec engine. The requests to identify can be done locally
         or sent to a facerec server by specifying the url.
@@ -93,22 +93,34 @@ class FaceTracker(object):
         pass
 
     @staticmethod
+    def on_identification(face):
+        pass
+
+
+    @staticmethod
+    def _verify_identity(shared, max_rel_shift, rect, name, id):
+            face_coordinates = np.asarray(
+                [rect.left(), rect.top(), rect.right(), rect.bottom()])
+
+            for track_id, face in shared['tracked_faces'].items():
+                if FaceTracker.is_same_face(face['coords'], face_coordinates, max_rel_shift):
+                    face["name"]=copy.copy(name)
+                    face["face_id"]=copy.copy(id)
+                    if not face['identified']:
+                        face['identified'] = time.time()
+                        log.info("identified: {}".format(face))
+                        FaceTracker.on_identification(face)
+                        break
+
+    @staticmethod
     def _verify_identify_server(shared, api, max_rel_shift):
         if 'frame' not in shared: return
         faces = detect_faces(shared['frame'])
         for facecode, rect, shapes in faces:
-            face_coordinates = np.asarray(
-                [rect.left(), rect.top(), rect.right(), rect.bottom()])
 
             person = api.identify_facecode(facecode)
-
-            for track_id, face in shared['tracked_faces'].items():
-                if FaceTracker.is_same_face(face['coords'], face_coordinates, max_rel_shift):
-                    face["name"]=copy.copy(person['name'])
-                    face["face_id"]=copy.copy(person['id'])
-                    face['identified'] = True
-                    log.info("Identified: {}".format(face))
-                    break
+            FaceTracker._verify_identity(shared, max_rel_shift, rect,
+                                         copy.copy(person['name']), copy.copy(person['id']))
 
     @staticmethod
     def _verify_identify_local(shared, max_rel_shift):
@@ -116,15 +128,8 @@ class FaceTracker(object):
         session = assert_session()
         persons = detect_and_identify_faces(shared['frame'], session)
         for person, rect, shapes in persons:
-            face_coordinates = np.asarray(
-                [rect.left(), rect.top(), rect.right(), rect.bottom()])
-
-            for track_id, face in shared['tracked_faces'].items():
-                if FaceTracker.is_same_face(face['coords'], face_coordinates, max_rel_shift):
-                    face["name"]=copy.copy(person.name)
-                    face["face_id"]=copy.copy(person.id)
-                    face['identified'] = True
-                    break
+            FaceTracker._verify_identity(shared, max_rel_shift, rect,
+                                         copy.copy(person.name), copy.copy(person.id))
         session.close_all()
 
     @staticmethod
@@ -157,7 +162,9 @@ class FaceTracker(object):
 
             if this_face is None:
                 # create new tracked face
-                this_face = TrackedFace(self.memory_manager.dict(),on_appearance=self.on_appearance, on_disappearance=self.on_disappearance)
+                this_face = TrackedFace(self.memory_manager.dict(),
+                                        on_appearance=self.on_appearance,
+                                        on_disappearance=self.on_disappearance)
                 track_id = this_face.id()
                 self._shared['tracked_faces'][track_id]=this_face._shared
 
@@ -172,6 +179,7 @@ class FaceTracker(object):
             face.update_not_in_frame()
             if face._not_in_frame < self.missing_tol_nframes:
                 faces_recently_in_frame.append((track_id, face))
+                face._shared['disappeared'] = time.time()
 
         tracked_faces = dict(faces_in_frame + faces_recently_in_frame)
         for track_id, face in self.tracked_faces.items():
@@ -221,15 +229,13 @@ class TrackedFace():
     @staticmethod
     def _on_appearance_proxy(face, on_appearance):
         face['appeared'] = time.time()
-        while not face['identified'] and not face['disappeared']:
-            time.sleep(0.05)
-        if not face['disappeared']:
-            log.info("appeared: {}".format(face))
-            on_appearance(face)
+        log.info("appeared: {}".format(face))
+        on_appearance(face)
 
     @staticmethod
     def _on_disappearance_proxy(face, on_disappearance):
-        face['disappeared'] = time.time()
+        if not face['disappeared']:
+            face['disappeared'] = time.time()
         log.info("disappeared: {}".format(face))
         on_disappearance(face)
 
