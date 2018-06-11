@@ -47,7 +47,7 @@ class Identifier(Thread):
 class FaceTracker(object):
     """ Trackes Faces in an concurent stream of images. """
     def __init__(self, url=None, max_relative_shift=0.8, avg_over_nframes=1, missing_tolerance_nframes=0,
-                 identification_interval=2):
+                 identification_interval=2, identification_callback=None):
         """
         creates a face tracker that identifies the tracked face with facerec engine. The requests to identify can be done locally
         or sent to a facerec server by specifying the url.
@@ -57,7 +57,12 @@ class FaceTracker(object):
             avg_over_nframes:  (int) optional moving average filter of the face position
             missing_tolerance_nframes: (int) how many frames should the tracker store a face that is not detected anymore (helps for short missing detection)
             identification_interval: (float) seconds to repeat the identification request
+            identification_callback: (face->None) function to call on completed identification
         """
+
+
+        TrackedFace.on_disappearance = self.on_disappearance
+        TrackedFace.on_appearance = self.on_appearance
 
         self.max_rel_shift = max_relative_shift
         self.avg_over_nframes = avg_over_nframes
@@ -73,16 +78,14 @@ class FaceTracker(object):
         if url is not None:
             self.api = FacerecApi(url)
             self._identifier = Identifier(identification_interval, FaceTracker._verify_identify_server,
-                                          args=(self._shared, self.api, self.max_rel_shift))
+                                          args=(self._shared, self.api, self.max_rel_shift, identification_callback))
         else:
             self.api = None
             self._identifier = Identifier(identification_interval, FaceTracker._verify_identify_local,
-                                          args=(self._shared, self.max_rel_shift))
+                                          args=(self._shared, self.max_rel_shift, identification_callback))
 
         self._identifier.start()
 
-        TrackedFace.on_disappearance = self.on_disappearance
-        TrackedFace.on_appearance = self.on_appearance
 
     @staticmethod
     def on_disappearance(face):
@@ -92,13 +95,10 @@ class FaceTracker(object):
     def on_appearance(face):
         pass
 
-    @staticmethod
-    def on_identification(face):
-        pass
 
 
     @staticmethod
-    def _verify_identity(shared, max_rel_shift, rect, name, id):
+    def _verify_identity(shared, max_rel_shift, rect, name, id, callback):
             face_coordinates = np.asarray(
                 [rect.left(), rect.top(), rect.right(), rect.bottom()])
 
@@ -109,27 +109,28 @@ class FaceTracker(object):
                     if not face['identified']:
                         face['identified'] = time.time()
                         log.info("identified: {}".format(face))
-                        FaceTracker.on_identification(face)
+                        if callback is not None:
+                            callback(face)
                         break
 
     @staticmethod
-    def _verify_identify_server(shared, api, max_rel_shift):
+    def _verify_identify_server(shared, api, max_rel_shift, callback):
         if 'frame' not in shared: return
         faces = detect_faces(shared['frame'])
         for facecode, rect, shapes in faces:
 
             person = api.identify_facecode(facecode)
             FaceTracker._verify_identity(shared, max_rel_shift, rect,
-                                         copy.copy(person['name']), copy.copy(person['id']))
+                                         copy.copy(person['name']), copy.copy(person['id']), callback)
 
     @staticmethod
-    def _verify_identify_local(shared, max_rel_shift):
+    def _verify_identify_local(shared, max_rel_shift, callback):
         if 'frame' not in shared: return
         session = assert_session()
         persons = detect_and_identify_faces(shared['frame'], session)
         for person, rect, shapes in persons:
             FaceTracker._verify_identity(shared, max_rel_shift, rect,
-                                         copy.copy(person.name), copy.copy(person.id))
+                                         copy.copy(person.name), copy.copy(person.id), callback)
         session.close_all()
 
     @staticmethod
