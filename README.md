@@ -13,6 +13,10 @@ A python library to provide out of the box human face identification, based on d
 
 Change-Log
 ----------
+##### 0.1.4
+* added test for callback
+* added identification callback to thread on creation
+
 ##### 0.1.3
 * improved logging events of tracker
 * try again threads
