@@ -60,7 +60,8 @@ def test_webcamstream_tracker_server():
         facedb.close()
 
 def test_tracker_server_logging():
-    tracker = FaceTracker(url='http://192.168.0.40:3080', missing_tolerance_nframes=10)
+    tracker = FaceTracker(url='http://192.168.0.40:3080', missing_tolerance_nframes=10,
+                          identification_callback=lambda face: log.info("identified: {}".format(face['name'])))
 
     cam = cv2.VideoCapture(0)
     color_green = (0, 255, 0)
