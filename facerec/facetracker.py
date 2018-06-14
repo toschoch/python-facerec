@@ -106,7 +106,7 @@ class FaceTracker(object):
                 if FaceTracker.is_same_face(face['coords'], face_coordinates, max_rel_shift):
                     face["name"]=copy.copy(name)
                     face["face_id"]=copy.copy(id)
-                    if face["name"]!=unknown_tag and (face["name"]!=face["last_name"]):
+                    if (face["name"]!=face["last_name"]):
                         face["last_name"] = face["name"]
                         face['identified'] = time.time()
                         log.info("identified: {}".format(face))
@@ -222,7 +222,7 @@ class TrackedFace():
         self._shared['id'] = self._tracker_id
         self._shared['identified'] = False
         self._shared['disappeared'] = False
-        self._shared['last_name'] = unknown_tag
+        self._shared['last_name'] = None
 
         self.on_appearance = on_appearance
         self.on_disappearance = on_disappearance
