@@ -20,6 +20,8 @@ import numpy as np
 
 log = logging.getLogger(__name__)
 
+unknown_tag = "unknown"
+
 __db_config_file = pathlib.Path(os.path.expanduser('~/.facerec.json'))
 __distance_threshold = 0.6
 try:
@@ -234,7 +236,7 @@ def identify_person(facecode, session=None):
 
     if len(similar_persons) == 0:
         log.info("found unknown face add to database...")
-        p = Person(name='unknown', code=facecode)
+        p = Person(name=unknown_tag, code=facecode)
         session.add(p)
 
     elif len(similar_persons) == 1:

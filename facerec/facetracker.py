@@ -13,7 +13,7 @@ from multiprocessing import Manager, Event # Process as Thread
 from threading import Thread #as Process, Event
 
 from .dlib_api import detect_and_identify_faces, detect_faces
-from .facedb import assert_session
+from .facedb import assert_session, unknown_tag
 from .client import FacerecApi
 
 import dlib
@@ -106,7 +106,8 @@ class FaceTracker(object):
                 if FaceTracker.is_same_face(face['coords'], face_coordinates, max_rel_shift):
                     face["name"]=copy.copy(name)
                     face["face_id"]=copy.copy(id)
-                    if not face['identified']:
+                    if face["name"]!=unknown_tag and (face["name"]!=face["last_name"]):
+                        face["last_name"] = face["name"]
                         face['identified'] = time.time()
                         log.info("identified: {}".format(face))
                         if callback is not None:
@@ -221,6 +222,7 @@ class TrackedFace():
         self._shared['id'] = self._tracker_id
         self._shared['identified'] = False
         self._shared['disappeared'] = False
+        self._shared['last_name'] = unknown_tag
 
         self.on_appearance = on_appearance
         self.on_disappearance = on_disappearance
