@@ -20,6 +20,8 @@ import dlib
 
 log = logging.getLogger(__name__)
 
+_processes = []
+
 class Identifier(Thread):
     def __init__(self, interval, function, args=[], kwargs={}):
         super(Identifier, self).__init__()
@@ -44,10 +46,12 @@ class Identifier(Thread):
             self.function(*self.args, **self.kwargs)
             self.triggered.wait(self.interval)
 
+
+
 class FaceTracker(object):
     """ Trackes Faces in an concurent stream of images. """
     def __init__(self, url=None, max_relative_shift=0.8, avg_over_nframes=1, missing_tolerance_nframes=0,
-                 identification_interval=2, identification_callback=None):
+                 identification_interval=2, appearance_callback=None, identification_callback=None, disappearance_callback=None):
         """
         creates a face tracker that identifies the tracked face with facerec engine. The requests to identify can be done locally
         or sent to a facerec server by specifying the url.
@@ -57,12 +61,10 @@ class FaceTracker(object):
             avg_over_nframes:  (int) optional moving average filter of the face position
             missing_tolerance_nframes: (int) how many frames should the tracker store a face that is not detected anymore (helps for short missing detection)
             identification_interval: (float) seconds to repeat the identification request
+            appearance_callback: (face->None) function to call on appeared faces
             identification_callback: (face->None) function to call on completed identification
+            disappearance_callback: (face->None) function to call on disappeared faces
         """
-
-
-        TrackedFace.on_disappearance = self.on_disappearance
-        TrackedFace.on_appearance = self.on_appearance
 
         self.max_rel_shift = max_relative_shift
         self.avg_over_nframes = avg_over_nframes
@@ -75,64 +77,84 @@ class FaceTracker(object):
         self._shared['tracked_faces'] = self.memory_manager.dict()
         self.tracked_faces = {}
 
+        self.appearance_callback = appearance_callback
+        self.disappearance_callback = disappearance_callback
+
         if url is not None:
             self.api = FacerecApi(url)
             self._identifier = Identifier(identification_interval, FaceTracker._verify_identify_server,
-                                          args=(self._shared, self.api, self.max_rel_shift, identification_callback))
+                                          args=(self._shared, self.api, self.max_rel_shift,
+                                                identification_callback, disappearance_callback))
         else:
             self.api = None
             self._identifier = Identifier(identification_interval, FaceTracker._verify_identify_local,
-                                          args=(self._shared, self.max_rel_shift, identification_callback))
+                                          args=(self._shared, self.max_rel_shift,
+                                                identification_callback, disappearance_callback))
 
         self._identifier.start()
 
-
     @staticmethod
-    def on_disappearance(face):
-        pass
-
-    @staticmethod
-    def on_appearance(face):
-        pass
-
-
-
-    @staticmethod
-    def _verify_identity(shared, max_rel_shift, rect, name, id, callback):
+    def _verify_identity(shared, max_rel_shift, rect, name, id, identification_callback, disappearance_callback):
             face_coordinates = np.asarray(
                 [rect.left(), rect.top(), rect.right(), rect.bottom()])
 
             for track_id, face in shared['tracked_faces'].items():
                 if FaceTracker.is_same_face(face['coords'], face_coordinates, max_rel_shift):
-                    face["name"]=copy.copy(name)
-                    face["face_id"]=copy.copy(id)
-                    if (face["name"]!=face["last_name"]):
-                        face["last_name"] = face["name"]
+                    name=copy.copy(name)
+                    id=copy.copy(id)
+                    if face["face_id"] != id:
+                        if face["identified"]:
+                            FaceTracker._on_disappearance_proxy(face, disappearance_callback)
+                        face["name"] = name
+                        face["face_id"] = id
                         face['identified'] = time.time()
                         log.info("identified: {}".format(face))
-                        if callback is not None:
-                            callback(face)
+                        if identification_callback is not None:
+                            identification_callback(face)
                         break
 
     @staticmethod
-    def _verify_identify_server(shared, api, max_rel_shift, callback):
+    def _verify_identify_server(shared, api, max_rel_shift, identification_callback, disappearance_callback):
         if 'frame' not in shared: return
         faces = detect_faces(shared['frame'])
         for facecode, rect, shapes in faces:
 
             person = api.identify_facecode(facecode)
             FaceTracker._verify_identity(shared, max_rel_shift, rect,
-                                         copy.copy(person['name']), copy.copy(person['id']), callback)
+                                         copy.copy(person['name']), copy.copy(person['id']),
+                                         identification_callback, disappearance_callback)
 
     @staticmethod
-    def _verify_identify_local(shared, max_rel_shift, callback):
+    def _verify_identify_local(shared, max_rel_shift, identification_callback, disappearance_callback):
         if 'frame' not in shared: return
         session = assert_session()
         persons = detect_and_identify_faces(shared['frame'], session)
         for person, rect, shapes in persons:
             FaceTracker._verify_identity(shared, max_rel_shift, rect,
-                                         copy.copy(person.name), copy.copy(person.id), callback)
+                                         copy.copy(person.name), copy.copy(person.id),
+                                         identification_callback, disappearance_callback)
         session.close_all()
+
+    @staticmethod
+    def start_thread(shared, callback, proxy):
+        p = Thread(target=proxy, args=(shared, callback))
+        _processes.append(p)
+        p.start()
+
+    @staticmethod
+    def _on_appearance_proxy(face, callback):
+        face['appeared'] = time.time()
+        log.info("appeared: {}".format(face))
+        if callback is not None:
+            callback(face)
+
+    @staticmethod
+    def _on_disappearance_proxy(face, callback):
+        if not face['disappeared']:
+            face['disappeared'] = time.time()
+        log.info("disappeared: {}".format(face))
+        if callback is not None:
+            callback(face)
 
     @staticmethod
     def is_same_face(coord1, coord2, max_rel_shift_per_frame):
@@ -164,9 +186,9 @@ class FaceTracker(object):
 
             if this_face is None:
                 # create new tracked face
-                this_face = TrackedFace(self.memory_manager.dict(),
-                                        on_appearance=self.on_appearance,
-                                        on_disappearance=self.on_disappearance)
+                this_face = TrackedFace(self.memory_manager.dict())
+                FaceTracker.start_thread(this_face._shared, self.appearance_callback, FaceTracker._on_appearance_proxy)
+
                 track_id = this_face.id()
                 self._shared['tracked_faces'][track_id]=this_face._shared
 
@@ -186,7 +208,7 @@ class FaceTracker(object):
         tracked_faces = dict(faces_in_frame + faces_recently_in_frame)
         for track_id, face in self.tracked_faces.items():
             if track_id not in tracked_faces.keys():
-                face.disappeared()
+                FaceTracker.start_thread(face._shared, self.disappearance_callback, FaceTracker._on_disappearance_proxy)
 
         self.tracked_faces.clear()
         self._shared['tracked_faces'].clear()
@@ -205,54 +227,25 @@ class FaceTracker(object):
         return self.tracked_faces.copy()
 
     def stop(self):
-        for track_id, face in self.tracked_faces.items():
-            [p.join() for  p in face._processes]
+        [p.join() for  p in _processes]
         self._identifier.cancel()
         self._identifier.join()
 
 class TrackedFace():
     """ a face tracked in video stream """
 
-    def __init__(self, shared_data, on_appearance=None, on_disappearance=None):
+    def __init__(self, shared_data):
 
         self._processes = []
         self._tracker_id = str(uuid.uuid4())
         self._coords_buffer = deque(maxlen=5)
         self._shared = shared_data
         self._shared['id'] = self._tracker_id
+        self._shared['face_id'] = -1
+        self._shared['name'] = unknown_tag
         self._shared['identified'] = False
         self._shared['disappeared'] = False
-        self._shared['last_name'] = None
 
-        self.on_appearance = on_appearance
-        self.on_disappearance = on_disappearance
-        self.appeared()
-
-
-    @staticmethod
-    def _on_appearance_proxy(face, on_appearance):
-        face['appeared'] = time.time()
-        log.info("appeared: {}".format(face))
-        on_appearance(face)
-
-    @staticmethod
-    def _on_disappearance_proxy(face, on_disappearance):
-        if not face['disappeared']:
-            face['disappeared'] = time.time()
-        log.info("disappeared: {}".format(face))
-        on_disappearance(face)
-
-    def appeared(self):
-        if self.on_appearance is not None:
-            p = Thread(target=self._on_appearance_proxy, args=(self._shared, self.on_appearance))
-            self._processes.append(p)
-            p.start()
-
-    def disappeared(self):
-        if self.on_disappearance is not None:
-            p = Thread(target=self._on_disappearance_proxy, args=(self._shared, self.on_disappearance))
-            self._processes.append(p)
-            p.start()
 
     def name(self, *args, **kwargs):
         return self._shared.get('name',*args, **kwargs)
