@@ -13,10 +13,6 @@ A python library to provide out of the box human face identification, based on d
 
 Change-Log
 ----------
-##### 0.1.5
-* refactored callbacks and assured correct order of invocation appeared->identified->disappeared->identified->disappeared->...->disappeared for every identification
-* invoke identification slot also if name is unknown
-* fix invocation of on_identification slot of identification changes
 
 ##### 0.1.4
 * added test for callback

@@ -23,9 +23,9 @@ install_requires = [x.strip() for x in all_reqs if 'git+' not in x]
 dependency_links = [x.strip() for x in all_reqs if x.startswith('git+')]
 
 setup(
-    name='python-facerec',
+    name='facerec',
     version_format='{tag}.dev{commitcount}',
-    setup_requires=['setuptools-git-version','pytest-runner'],
+    setup_requires=['setuptools-git-version'],
     description='A python library to provide out of the box human face identification, based on dlib public models.',
     long_description=long_description,
     classifiers=[
